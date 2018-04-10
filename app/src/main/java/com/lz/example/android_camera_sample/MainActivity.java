@@ -14,7 +14,8 @@ public class MainActivity extends Activity {
     }
 
     public void onExistCameraClick(View view) {
-
+        Intent intent = new Intent(MainActivity.this, SystemCarmeraActivity.class);
+        startActivity(intent);
     }
 
     public void onBuildingCameraAppClick(View view) {
