@@ -7,8 +7,11 @@ package com.lz.example.android_camera_sample.camera;
 import android.content.Context;
 import android.hardware.Camera;
 import android.util.Log;
+import android.view.Display;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.WindowManager;
 
 import java.io.IOException;
 
@@ -48,7 +51,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     public void surfaceDestroyed(SurfaceHolder holder) {
         // empty. Take care of releasing the Camera preview in your activity.
-        releaseCamera();
+        //releaseCamera();
     }
 
     public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
@@ -72,6 +75,11 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
         // start preview with new settings
         try {
+            int displayOrientation = getDisplayOrientation();
+            mCamera.setDisplayOrientation(displayOrientation);
+            Camera.Parameters parameters = mCamera.getParameters();
+            parameters.setRotation(displayOrientation);
+            mCamera.setParameters(parameters);
             mCamera.setPreviewCallback(this);
             mCamera.setPreviewDisplay(mHolder);
             mCamera.startPreview();
@@ -88,8 +96,37 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         }
     }
 
+    public int getDisplayOrientation() {
+        Display display = ((WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+        int rotation = display.getRotation();
+        Log.e(TAG, rotation + "");
+        int degrees = 0;
+        switch (rotation) {
+            case Surface.ROTATION_0:
+                degrees = 0;
+                break;
+            case Surface.ROTATION_90:
+                degrees = 90;
+                break;
+            case Surface.ROTATION_180:
+                degrees = 180;
+                break;
+            case Surface.ROTATION_270:
+                degrees = 270;
+                break;
+        }
+
+        android.hardware.Camera.CameraInfo camInfo =
+                new android.hardware.Camera.CameraInfo();
+        android.hardware.Camera.getCameraInfo(Camera.CameraInfo.CAMERA_FACING_BACK, camInfo);
+
+        int result = (camInfo.orientation - degrees + 360) % 360;
+        return result;
+    }
+
+
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
-        Log.e(TAG, data.toString());
+        //Log.e(TAG, data.toString());
     }
 }

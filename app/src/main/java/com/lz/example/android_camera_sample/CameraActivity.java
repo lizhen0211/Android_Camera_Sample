@@ -1,13 +1,18 @@
 package com.lz.example.android_camera_sample;
 
 import android.Manifest;
+import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Rect;
 import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.Display;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.Toast;
@@ -38,6 +43,7 @@ public class CameraActivity extends CheckPermissionsActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_capture);
         // Add a listener to the Capture button
         Button captureButton = (Button) findViewById(R.id.button_capture);
@@ -83,7 +89,7 @@ public class CameraActivity extends CheckPermissionsActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        releaseCamera();              // release the camera immediately on pause event
+        //releaseCamera();              // release the camera immediately on pause event
     }
 
     private void releaseCamera() {
@@ -110,11 +116,70 @@ public class CameraActivity extends CheckPermissionsActivity {
                 meteringAreas.add(new Camera.Area(areaRect1, 600)); // set weight to 60%
                 Rect areaRect2 = new Rect(800, -1000, 1000, -800);  // specify an area in upper right of image
                 meteringAreas.add(new Camera.Area(areaRect2, 400)); // set weight to 40%
-                params.setMeteringAreas(meteringAreas);
+                //params.setMeteringAreas(meteringAreas);
+            }
+
+            //设置对焦区域
+            if (params.getMaxNumFocusAreas() > 0) {
+                List<Camera.Area> areas = new ArrayList<Camera.Area>();
+                int left = -300;
+                int top = -300;
+                int right = 300;
+                int bottom = 300;
+
+                left = left < -1000 ? -1000 : left;
+                top = top < -1000 ? -1000 : top;
+                right = right > 1000 ? 1000 : right;
+                bottom = bottom > 1000 ? 1000 : bottom;
+                areas.add(new Camera.Area(new Rect(left, top, right, bottom), 1000));
+                //params.setFocusAreas(areas);
+            }
+
+            List<String> focusModes = params.getSupportedFocusModes();
+            if (focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
+                // Autofocus mode is supported
+                // set the focus mode
+                params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+            }
+
+            WindowManager windowManager = getWindowManager();
+            Display display = windowManager.getDefaultDisplay();
+            int screenWidth = display.getWidth();
+            int screenHeight = display.getHeight();
+            //设置预览图片大小
+            List<Camera.Size> sizes = params.getSupportedPreviewSizes();
+            if (sizes.size() > 0) {
+                /*Camera.Size maxValue = sizes.get(0);
+                for (int i = 0; i < sizes.size(); i++) {
+                    Camera.Size value = sizes.get(i);
+                    if (value.width > maxValue.width) {
+                        maxValue = value;
+                    }
+                }
+                Log.e(TAG + "previewSize", maxValue.width + ":" + maxValue.height);*/
+                for (Camera.Size size : sizes) {
+                    //Log.e(TAG + "PreviewSize", size.width + ":" + size.height);
+                }
+                Camera.Size bestSize = Utils.getBestSize(mCamera, sizes, true, screenWidth, screenHeight);
+                Log.e(TAG + "oriPreviewSize", params.getPreviewSize().width + ":" + params.getPreviewSize().height);
+                Log.e(TAG + "bestPreviewSize", bestSize.width + ":" + bestSize.height);
+                params.setPreviewSize(bestSize.width, bestSize.height);
+            }
+
+            //设置图片质量
+            params.setJpegQuality(100);
+            //设置图片大小
+            List<Camera.Size> supportedPictureSizes = params.getSupportedPictureSizes();
+            if (supportedPictureSizes.size() > 0) {
+                for (Camera.Size size : supportedPictureSizes) {
+                    //Log.e(TAG + "PictureSize", size.width + ":" + size.height);
+                }
+                Camera.Size bestSize = Utils.getBestSize(mCamera, supportedPictureSizes, true, screenWidth, screenHeight);
+                //Log.e(TAG + "bestPictureSize", bestSize.width + ":" + bestSize.height);
+                params.setPictureSize(bestSize.width, bestSize.height);
             }
 
             mCamera.setParameters(params);
-
             mPreview = new CameraPreview(this, mCamera);
             FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
             preview.addView(mPreview);
@@ -135,6 +200,7 @@ public class CameraActivity extends CheckPermissionsActivity {
                 Manifest.permission.VIBRATE};
         return needPermissions;
     }
+
     public static final int MEDIA_TYPE_IMAGE = 1;
     public static final int MEDIA_TYPE_VIDEO = 2;
 
@@ -179,5 +245,15 @@ public class CameraActivity extends CheckPermissionsActivity {
         }
 
         return mediaFile;
+    }
+
+    /*@Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+    }*/
+
+    public static int dip2px(Context context, float dipValue) {
+        final float scale = context.getResources().getDisplayMetrics().density; // 设备的密度
+        return (int) (dipValue * scale + 0.5f);
     }
 }
