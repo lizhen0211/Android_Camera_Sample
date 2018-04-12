@@ -3,23 +3,35 @@ package com.lz.example.android_camera_sample;
 import android.Manifest;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.graphics.Rect;
+import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
+import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.lz.example.android_camera_sample.camera.CameraPreview;
 import com.lz.example.android_camera_sample.camera.open.OpenCameraInterface;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -37,6 +49,7 @@ public class CameraActivity extends CheckPermissionsActivity {
 
     private Camera mCamera;
     private CameraPreview mPreview;
+    private ResultSurfaceView surfaceView;
 
     private static final String TAG = CameraActivity.class.getSimpleName();
 
@@ -45,8 +58,10 @@ public class CameraActivity extends CheckPermissionsActivity {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_capture);
+        getWindowManager().getDefaultDisplay().getMetrics(outMetrics);
         // Add a listener to the Capture button
         Button captureButton = (Button) findViewById(R.id.button_capture);
+        surfaceView = (ResultSurfaceView) findViewById(R.id.result_surface_view);
         captureButton.setOnClickListener(
                 new View.OnClickListener() {
                     @Override
@@ -56,6 +71,13 @@ public class CameraActivity extends CheckPermissionsActivity {
                     }
                 }
         );
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                e.printStackTrace();
+
+            }
+        });
     }
 
     private Camera.PictureCallback mPicture = new Camera.PictureCallback() {
@@ -165,7 +187,7 @@ public class CameraActivity extends CheckPermissionsActivity {
                 //Log.e(TAG + "bestPreviewSize", bestSize.width + ":" + bestSize.height);
                 //params.setPreviewSize(bestSize.width, bestSize.height);
                 //params.setPreviewSize(1920, 1080);
-                params.setPreviewSize(params.getPreviewSize().width,params.getPreviewSize().height);
+                params.setPreviewSize(params.getPreviewSize().width, params.getPreviewSize().height);
             }
 
             //设置图片质量
@@ -183,11 +205,113 @@ public class CameraActivity extends CheckPermissionsActivity {
 
             mCamera.setParameters(params);
             mPreview = new CameraPreview(this, mCamera);
+            mPreview.setPreviewHandler(previewHandler);
+            mPreview.setPreviewCallBack(previewCallBack);
             FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
             preview.addView(mPreview);
         } else {
             Toast.makeText(CameraActivity.this, "not support", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    public interface PreviewCallBack {
+        void onPreviewFrame(byte[] data, Camera camera);
+    }
+
+    private DisplayMetrics outMetrics = new DisplayMetrics();
+    private long lastTimeStamp = 0;
+    private PreviewCallBack previewCallBack = new PreviewCallBack() {
+        @Override
+        public void onPreviewFrame(final byte[] data, Camera camera) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Camera.Parameters parameters = mCamera.getParameters();
+                    final int width = parameters.getPreviewSize().width;
+                    final int height = parameters.getPreviewSize().height;
+                    Log.e(TAG, width + ":" + height);
+                    Log.e(TAG, System.currentTimeMillis() + "");
+
+                    YuvImage yuv = new YuvImage(data, parameters.getPreviewFormat(), width, height, null);
+
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    yuv.compressToJpeg(new Rect(0, 0, width, height), 100, out);
+
+                    byte[] bytes = out.toByteArray();
+                    BitmapFactory.Options options = new BitmapFactory.Options();
+                    options.inJustDecodeBounds = true;
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
+                    //options.inSampleSize = calculateInSampleSize(options,  width,height);
+                    options.inSampleSize = 2;
+                    Log.e(TAG, "inSampleSize:" + options.inSampleSize + "");
+                    Log.e(TAG, "outMetrics: " + outMetrics.widthPixels + ":" + outMetrics.heightPixels);
+                    options.inJustDecodeBounds = false;
+                    final Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
+                    Matrix matrix = new Matrix();
+                    matrix.preRotate(mPreview.getDisplayOrientation());
+                    final Bitmap newbitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, false);
+
+                    Log.e(TAG, Thread.currentThread().getName());
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+
+                                /*ViewGroup.LayoutParams layoutParams = surfaceView.getLayoutParams();
+                                layoutParams.height = newbitmap.getHeight();
+                                layoutParams.width = newbitmap.getWidth();
+                                surfaceView.setLayoutParams(layoutParams);*/
+                                surfaceView.drawResult(newbitmap);
+                                mPreview.setOneShotPreviewCallback();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+                }
+            }).start();
+        }
+    };
+
+    private Handler previewHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            if (msg.what == mPreview.previewMessage) {
+                Camera.Parameters parameters = mCamera.getParameters();
+                int width = parameters.getPreviewSize().width;
+                int height = parameters.getPreviewSize().height;
+                Log.e(TAG, width + ":" + height);
+                byte[] data = (byte[]) msg.obj;
+                YuvImage yuv = new YuvImage(data, parameters.getPreviewFormat(), width, height, null);
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                yuv.compressToJpeg(new Rect(0, 0, width, height), 100, out);
+                byte[] bytes = out.toByteArray();
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                //options.inJustDecodeBounds = true;
+                final Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
+                Log.e(TAG, Thread.currentThread().getName());
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        surfaceView.drawResult(bitmap);
+                    }
+                });
+
+
+            }
+        }
+    };
+
+    private void decode(byte[] data, int width, int height) {
+        /*long start = System.currentTimeMillis();
+        Result rawResult = null;
+        //add by lz start
+        byte[] rotatedData = new byte[data.length];
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++)
+                rotatedData[x * height + height - y - 1] = data[x + y * width];
+        }*/
     }
 
     @Override
@@ -257,5 +381,35 @@ public class CameraActivity extends CheckPermissionsActivity {
     public static int dip2px(Context context, float dipValue) {
         final float scale = context.getResources().getDisplayMetrics().density; // 设备的密度
         return (int) (dipValue * scale + 0.5f);
+    }
+
+    public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
+
+// Raw height and width of image
+
+        final int height = options.outHeight;
+
+        final int width = options.outWidth;
+
+        int inSampleSize = 1;
+
+        if (height > reqHeight || width > reqWidth) {
+
+            final int halfHeight = height / 2;
+
+            final int halfWidth = width / 2;
+            // 保证压缩后的宽高都不小于要求的宽高。
+
+            while ((halfHeight / inSampleSize) > reqHeight &&
+                    (halfWidth / inSampleSize) > reqWidth) {
+
+                inSampleSize *= 2;
+
+            }
+
+        }
+
+        return inSampleSize;
+
     }
 }

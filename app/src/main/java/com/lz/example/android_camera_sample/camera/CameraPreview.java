@@ -6,12 +6,16 @@ package com.lz.example.android_camera_sample.camera;
 
 import android.content.Context;
 import android.hardware.Camera;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.WindowManager;
+
+import com.lz.example.android_camera_sample.CameraActivity;
 
 import java.io.IOException;
 
@@ -23,6 +27,12 @@ import static android.content.ContentValues.TAG;
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Camera.PreviewCallback {
     private SurfaceHolder mHolder;
     private Camera mCamera;
+
+    private Handler previewHandler;
+
+    private CameraActivity.PreviewCallBack previewCallBack;
+
+    public static final int previewMessage = 1;
 
     public CameraPreview(Context context, Camera camera) {
         super(context);
@@ -39,7 +49,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     public void surfaceCreated(SurfaceHolder holder) {
         // The Surface has been created, now tell the camera where to draw the preview.
         try {
-            mCamera.setPreviewCallback(this);
+            mCamera.setOneShotPreviewCallback(this);
             //通过SurfaceView显示取景画面
             mCamera.setPreviewDisplay(holder);
             //开始预览
@@ -80,7 +90,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             Camera.Parameters parameters = mCamera.getParameters();
             parameters.setRotation(displayOrientation);
             mCamera.setParameters(parameters);
-            mCamera.setPreviewCallback(this);
+            mCamera.setOneShotPreviewCallback(this);
             mCamera.setPreviewDisplay(mHolder);
             mCamera.startPreview();
 
@@ -125,8 +135,27 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     }
 
 
+    public void setPreviewHandler(Handler previewHandler) {
+        this.previewHandler = previewHandler;
+    }
+
+    public void setPreviewCallBack(CameraActivity.PreviewCallBack previewCallBack) {
+        this.previewCallBack = previewCallBack;
+    }
+
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
         //Log.e(TAG, data.toString());
+        if (previewHandler != null) {
+            /*Message message = previewHandler.obtainMessage(previewMessage, data);
+            message.sendToTarget();*/
+        }
+        if (previewCallBack != null) {
+            previewCallBack.onPreviewFrame(data, camera);
+        }
+    }
+
+    public void setOneShotPreviewCallback(){
+        mCamera.setOneShotPreviewCallback(this);
     }
 }
