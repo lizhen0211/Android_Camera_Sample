@@ -158,12 +158,14 @@ public class CameraActivity extends CheckPermissionsActivity {
                 }
                 Log.e(TAG + "previewSize", maxValue.width + ":" + maxValue.height);*/
                 for (Camera.Size size : sizes) {
-                    //Log.e(TAG + "PreviewSize", size.width + ":" + size.height);
+                    Log.e(TAG + "PreviewSize", size.width + ":" + size.height);
                 }
-                Camera.Size bestSize = Utils.getBestSize(mCamera, sizes, true, screenWidth, screenHeight);
+                //Camera.Size bestSize = Utils.getBestSize(mCamera, sizes, true, screenWidth, screenHeight);
                 Log.e(TAG + "oriPreviewSize", params.getPreviewSize().width + ":" + params.getPreviewSize().height);
-                Log.e(TAG + "bestPreviewSize", bestSize.width + ":" + bestSize.height);
-                params.setPreviewSize(bestSize.width, bestSize.height);
+                //Log.e(TAG + "bestPreviewSize", bestSize.width + ":" + bestSize.height);
+                //params.setPreviewSize(bestSize.width, bestSize.height);
+                //params.setPreviewSize(1920, 1080);
+                params.setPreviewSize(params.getPreviewSize().width,params.getPreviewSize().height);
             }
 
             //设置图片质量
