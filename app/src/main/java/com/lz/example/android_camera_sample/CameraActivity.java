@@ -49,7 +49,7 @@ public class CameraActivity extends CheckPermissionsActivity {
 
     private Camera mCamera;
     private CameraPreview mPreview;
-    private ResultSurfaceView surfaceView;
+    private ImageView surfaceView;
 
     private static final String TAG = CameraActivity.class.getSimpleName();
 
@@ -61,7 +61,7 @@ public class CameraActivity extends CheckPermissionsActivity {
         getWindowManager().getDefaultDisplay().getMetrics(outMetrics);
         // Add a listener to the Capture button
         Button captureButton = (Button) findViewById(R.id.button_capture);
-        surfaceView = (ResultSurfaceView) findViewById(R.id.result_surface_view);
+        surfaceView = (ImageView) findViewById(R.id.result_surface_view);
         captureButton.setOnClickListener(
                 new View.OnClickListener() {
                     @Override
@@ -171,23 +171,27 @@ public class CameraActivity extends CheckPermissionsActivity {
             //设置预览图片大小
             List<Camera.Size> sizes = params.getSupportedPreviewSizes();
             if (sizes.size() > 0) {
-                /*Camera.Size maxValue = sizes.get(0);
+                Camera.Size maxValue = sizes.get(0);
                 for (int i = 0; i < sizes.size(); i++) {
                     Camera.Size value = sizes.get(i);
                     if (value.width > maxValue.width) {
                         maxValue = value;
                     }
                 }
-                Log.e(TAG + "previewSize", maxValue.width + ":" + maxValue.height);*/
+                Log.e(TAG + "previewSize", maxValue.width + ":" + maxValue.height);
+                params.setPreviewSize(maxValue.width, maxValue.height);
                 for (Camera.Size size : sizes) {
-                    Log.e(TAG + "PreviewSize", size.width + ":" + size.height);
+                    //Log.e(TAG + "PreviewSize", size.width + ":" + size.height);
                 }
                 //Camera.Size bestSize = Utils.getBestSize(mCamera, sizes, true, screenWidth, screenHeight);
-                Log.e(TAG + "oriPreviewSize", params.getPreviewSize().width + ":" + params.getPreviewSize().height);
+
                 //Log.e(TAG + "bestPreviewSize", bestSize.width + ":" + bestSize.height);
                 //params.setPreviewSize(bestSize.width, bestSize.height);
+                Log.e(TAG + "oriPreviewSize", params.getPreviewSize().width + ":" + params.getPreviewSize().height);
+                Log.e(TAG + "oriPreviewSize picture", params.getPictureSize().width + ":" + params.getPictureSize().height);
+                Log.e(TAG + "oriPreviewSize screen", screenWidth + ":" + screenHeight);
                 //params.setPreviewSize(1920, 1080);
-                params.setPreviewSize(params.getPreviewSize().width, params.getPreviewSize().height);
+                //params.setPreviewSize(params.getPreviewSize().width, params.getPreviewSize().height);
             }
 
             //设置图片质量
@@ -200,7 +204,7 @@ public class CameraActivity extends CheckPermissionsActivity {
                 }
                 Camera.Size bestSize = Utils.getBestSize(mCamera, supportedPictureSizes, true, screenWidth, screenHeight);
                 //Log.e(TAG + "bestPictureSize", bestSize.width + ":" + bestSize.height);
-                params.setPictureSize(bestSize.width, bestSize.height);
+                //params.setPictureSize(bestSize.width, bestSize.height);
             }
 
             mCamera.setParameters(params);
@@ -219,7 +223,8 @@ public class CameraActivity extends CheckPermissionsActivity {
     }
 
     private DisplayMetrics outMetrics = new DisplayMetrics();
-    private long lastTimeStamp = 0;
+
+    private boolean isLog = false;
     private PreviewCallBack previewCallBack = new PreviewCallBack() {
         @Override
         public void onPreviewFrame(final byte[] data, Camera camera) {
@@ -227,8 +232,8 @@ public class CameraActivity extends CheckPermissionsActivity {
                 @Override
                 public void run() {
                     Camera.Parameters parameters = mCamera.getParameters();
-                    final int width = parameters.getPreviewSize().width;
-                    final int height = parameters.getPreviewSize().height;
+                    int width = parameters.getPreviewSize().width;
+                    int height = parameters.getPreviewSize().height;
                     Log.e(TAG, width + ":" + height);
                     Log.e(TAG, System.currentTimeMillis() + "");
 
@@ -242,14 +247,50 @@ public class CameraActivity extends CheckPermissionsActivity {
                     options.inJustDecodeBounds = true;
                     BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
                     //options.inSampleSize = calculateInSampleSize(options,  width,height);
-                    options.inSampleSize = 2;
+                    options.inSampleSize = 1;
                     Log.e(TAG, "inSampleSize:" + options.inSampleSize + "");
                     Log.e(TAG, "outMetrics: " + outMetrics.widthPixels + ":" + outMetrics.heightPixels);
                     options.inJustDecodeBounds = false;
                     final Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
                     Matrix matrix = new Matrix();
                     matrix.preRotate(mPreview.getDisplayOrientation());
-                    final Bitmap newbitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, false);
+
+    /*                float picWidth = bitmap.getWidth();
+                    float picHeight = bitmap.getHeight();
+                    if (picWidth < picHeight) {
+                        picWidth = picWidth * 0.8f;
+                        picHeight = picWidth * 0.8f;
+                    } else {
+                        picWidth = (picHeight) * 0.6f;
+                        picHeight = (picHeight) * 0.6f;
+                    }
+                    int marginTop = 0;
+                    int marginLeft = 0;
+                    if (picWidth < picHeight) {
+
+                    } else {
+                        marginTop = (int) (height - picHeight) / 2;
+                        marginLeft = (int) (width - picWidth) / 2;
+                    }*/
+
+                    int w = bitmap.getWidth(); // 得到图片的宽，高
+                    int h = bitmap.getHeight();
+
+                    if (!isLog) {
+                        Log.e("oriPreviewSize bitmap", w + ":" + h);
+                        isLog = true;
+                    }
+
+                    int wh = w > h ? h : w;// 裁切后所取的正方形区域边长
+                    int retX = w > h ? (w - h) / 2 : 0;// 基于原图，取正方形左上角x坐标
+                    int retY = w > h ? 0 : (h - w) / 2;
+
+                    int margin = 200;
+                    int newWidth = wh - margin;
+                    int newHeight = wh - margin;
+                    //matrix.postScale(scale, scale);
+                    final Bitmap newbitmap = Bitmap.createBitmap(bitmap, retX + margin / 2, retY + margin / 2, newWidth, newHeight, matrix, false);
+                    //final Bitmap newbitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, false);
 
                     Log.e(TAG, Thread.currentThread().getName());
                     runOnUiThread(new Runnable() {
@@ -261,7 +302,8 @@ public class CameraActivity extends CheckPermissionsActivity {
                                 layoutParams.height = newbitmap.getHeight();
                                 layoutParams.width = newbitmap.getWidth();
                                 surfaceView.setLayoutParams(layoutParams);*/
-                                surfaceView.drawResult(newbitmap);
+                                //surfaceView.drawResult(newbitmap);
+                                surfaceView.setImageBitmap(newbitmap);
                                 mPreview.setOneShotPreviewCallback();
                             } catch (Exception e) {
                                 e.printStackTrace();
@@ -294,7 +336,7 @@ public class CameraActivity extends CheckPermissionsActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        surfaceView.drawResult(bitmap);
+                        //surfaceView.drawResult(bitmap);
                     }
                 });
 
