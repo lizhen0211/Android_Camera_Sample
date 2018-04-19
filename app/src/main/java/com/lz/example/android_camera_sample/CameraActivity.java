@@ -171,6 +171,10 @@ public class CameraActivity extends CheckPermissionsActivity {
             //设置预览图片大小
             List<Camera.Size> sizes = params.getSupportedPreviewSizes();
             if (sizes.size() > 0) {
+
+                int previewWidth;
+                int previewHeight;
+
                 Camera.Size maxValue = sizes.get(0);
                 for (int i = 0; i < sizes.size(); i++) {
                     Camera.Size value = sizes.get(i);
@@ -178,8 +182,23 @@ public class CameraActivity extends CheckPermissionsActivity {
                         maxValue = value;
                     }
                 }
+                previewWidth = maxValue.width;
+                previewHeight = maxValue.height;
+
                 Log.e(TAG + "previewSize", maxValue.width + ":" + maxValue.height);
-                params.setPreviewSize(maxValue.width, maxValue.height);
+
+                //小米手机预览大小大于屏幕宽度，导致预览图片左右充满屏幕
+                if (maxValue.height > screenWidth) {
+                    for (int i = 0; i < sizes.size(); i++) {
+                        Camera.Size size = sizes.get(i);
+                        if (size.height == screenWidth && size.width == screenHeight) {
+                            previewWidth = screenHeight;
+                            previewHeight = screenWidth;
+                            break;
+                        }
+                    }
+                }
+                params.setPreviewSize(previewWidth, previewHeight);
                 for (Camera.Size size : sizes) {
                     //Log.e(TAG + "PreviewSize", size.width + ":" + size.height);
                 }
