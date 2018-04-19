@@ -51,7 +51,7 @@ public class CameraActivity extends CheckPermissionsActivity {
     private static final String TAG = CameraActivity.class.getSimpleName();
 
     private int scanWindowMarginTopDp = 0;
-    private static final int scanWindowMarginTopPx = 150;
+    private static final int scanWindowMarginTopPx = 0;
     //bitmap 相对于预览窗口的上下间距之和
     private int bitmapMarginDp;
     private static final int bitmapMarginPx = 50;
@@ -295,8 +295,15 @@ public class CameraActivity extends CheckPermissionsActivity {
                     bitmapMarginDp = dip2px(CameraActivity.this, bitmapMarginPx);
                     int newWidth = wh - bitmapMarginDp;
                     int newHeight = wh - bitmapMarginDp;
-                    //matrix.postScale(scale, scale);
-                    final Bitmap newbitmap = Bitmap.createBitmap(bitmap, retX + bitmapMarginDp / 2 - (width / 2 - scanWindowMarginTopDp - newWidth / 2), retY + bitmapMarginDp / 2, newWidth, newHeight, matrix, false);
+                    //matrix.postScale(scale, scale);'
+                    int bitmapCutOffset;
+                    if (scanWindowMarginTopDp > 0) {
+                        bitmapCutOffset = width / 2 - scanWindowMarginTopDp - newWidth / 2;
+                    } else {
+                        bitmapCutOffset = 0;
+                    }
+
+                    final Bitmap newbitmap = Bitmap.createBitmap(bitmap, retX + bitmapMarginDp / 2 - bitmapCutOffset, retY + bitmapMarginDp / 2, newWidth, newHeight, matrix, false);
                     //final Bitmap newbitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, false);
 
                     Log.e(TAG, Thread.currentThread().getName());
