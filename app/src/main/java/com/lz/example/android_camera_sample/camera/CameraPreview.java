@@ -85,11 +85,6 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
         // start preview with new settings
         try {
-            int displayOrientation = getDisplayOrientation();
-            mCamera.setDisplayOrientation(displayOrientation);
-            Camera.Parameters parameters = mCamera.getParameters();
-            parameters.setRotation(displayOrientation);
-            mCamera.setParameters(parameters);
             mCamera.setOneShotPreviewCallback(this);
             mCamera.setPreviewDisplay(mHolder);
             mCamera.startPreview();
@@ -104,34 +99,6 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             mCamera.release();        // release the camera for other applications
             mCamera = null;
         }
-    }
-
-    public int getDisplayOrientation() {
-        Display display = ((WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
-        int rotation = display.getRotation();
-        Log.e(TAG, rotation + "");
-        int degrees = 0;
-        switch (rotation) {
-            case Surface.ROTATION_0:
-                degrees = 0;
-                break;
-            case Surface.ROTATION_90:
-                degrees = 90;
-                break;
-            case Surface.ROTATION_180:
-                degrees = 180;
-                break;
-            case Surface.ROTATION_270:
-                degrees = 270;
-                break;
-        }
-
-        android.hardware.Camera.CameraInfo camInfo =
-                new android.hardware.Camera.CameraInfo();
-        android.hardware.Camera.getCameraInfo(Camera.CameraInfo.CAMERA_FACING_BACK, camInfo);
-
-        int result = (camInfo.orientation - degrees + 360) % 360;
-        return result;
     }
 
 

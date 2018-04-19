@@ -16,6 +16,7 @@ import android.os.Message;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
+import android.view.Surface;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -233,6 +234,14 @@ public class CameraActivity extends CheckPermissionsActivity {
                 //params.setPictureSize(bestSize.width, bestSize.height);
             }
             Log.e(TAG + "oriPreviewSize picture", params.getPictureSize().width + ":" + params.getPictureSize().height);
+
+
+            int displayOrientation = getDisplayOrientation();
+            mCamera.setDisplayOrientation(displayOrientation);
+            Camera.Parameters parameters = mCamera.getParameters();
+            parameters.setRotation(displayOrientation);
+            mCamera.setParameters(parameters);
+
             mCamera.setParameters(params);
             mPreview = new CameraPreview(this, mCamera);
             mPreview.setPreviewHandler(previewHandler);
@@ -242,6 +251,34 @@ public class CameraActivity extends CheckPermissionsActivity {
         } else {
             Toast.makeText(CameraActivity.this, "not support", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    public int getDisplayOrientation() {
+        Display display = ((WindowManager) getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+        int rotation = display.getRotation();
+        Log.e(TAG, rotation + "");
+        int degrees = 0;
+        switch (rotation) {
+            case Surface.ROTATION_0:
+                degrees = 0;
+                break;
+            case Surface.ROTATION_90:
+                degrees = 90;
+                break;
+            case Surface.ROTATION_180:
+                degrees = 180;
+                break;
+            case Surface.ROTATION_270:
+                degrees = 270;
+                break;
+        }
+
+        android.hardware.Camera.CameraInfo camInfo =
+                new android.hardware.Camera.CameraInfo();
+        android.hardware.Camera.getCameraInfo(Camera.CameraInfo.CAMERA_FACING_BACK, camInfo);
+
+        int result = (camInfo.orientation - degrees + 360) % 360;
+        return result;
     }
 
     public interface PreviewCallBack {
@@ -279,7 +316,7 @@ public class CameraActivity extends CheckPermissionsActivity {
                     options.inJustDecodeBounds = false;
                     final Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
                     Matrix matrix = new Matrix();
-                    matrix.preRotate(mPreview.getDisplayOrientation());
+                    matrix.preRotate(getDisplayOrientation());
 
                     int w = bitmap.getWidth(); // 得到图片的宽，高
                     int h = bitmap.getHeight();
