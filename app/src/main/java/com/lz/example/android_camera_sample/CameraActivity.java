@@ -2,7 +2,6 @@ package com.lz.example.android_camera_sample;
 
 import android.Manifest;
 import android.content.Context;
-import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
@@ -13,19 +12,17 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.Looper;
 import android.os.Message;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
-import android.view.SurfaceView;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.lz.example.android_camera_sample.camera.CameraPreview;
@@ -53,6 +50,12 @@ public class CameraActivity extends CheckPermissionsActivity {
 
     private static final String TAG = CameraActivity.class.getSimpleName();
 
+    private int scanWindowMarginTopDp = 0;
+    private static final int scanWindowMarginTopPx = 150;
+    //bitmap 相对于预览窗口的上下间距之和
+    private int bitmapMarginDp;
+    private static final int bitmapMarginPx = 50;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -62,6 +65,10 @@ public class CameraActivity extends CheckPermissionsActivity {
         // Add a listener to the Capture button
         Button captureButton = (Button) findViewById(R.id.button_capture);
         surfaceView = (ImageView) findViewById(R.id.result_surface_view);
+        RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) surfaceView.getLayoutParams();
+        scanWindowMarginTopDp = dip2px(this, scanWindowMarginTopPx);
+        layoutParams.setMargins(layoutParams.leftMargin, scanWindowMarginTopDp, layoutParams.rightMargin, 0);
+
         captureButton.setOnClickListener(
                 new View.OnClickListener() {
                     @Override
@@ -274,24 +281,6 @@ public class CameraActivity extends CheckPermissionsActivity {
                     Matrix matrix = new Matrix();
                     matrix.preRotate(mPreview.getDisplayOrientation());
 
-    /*                float picWidth = bitmap.getWidth();
-                    float picHeight = bitmap.getHeight();
-                    if (picWidth < picHeight) {
-                        picWidth = picWidth * 0.8f;
-                        picHeight = picWidth * 0.8f;
-                    } else {
-                        picWidth = (picHeight) * 0.6f;
-                        picHeight = (picHeight) * 0.6f;
-                    }
-                    int marginTop = 0;
-                    int marginLeft = 0;
-                    if (picWidth < picHeight) {
-
-                    } else {
-                        marginTop = (int) (height - picHeight) / 2;
-                        marginLeft = (int) (width - picWidth) / 2;
-                    }*/
-
                     int w = bitmap.getWidth(); // 得到图片的宽，高
                     int h = bitmap.getHeight();
 
@@ -303,12 +292,11 @@ public class CameraActivity extends CheckPermissionsActivity {
                     int wh = w > h ? h : w;// 裁切后所取的正方形区域边长
                     int retX = w > h ? (w - h) / 2 : 0;// 基于原图，取正方形左上角x坐标
                     int retY = w > h ? 0 : (h - w) / 2;
-
-                    int margin = 200;
-                    int newWidth = wh - margin;
-                    int newHeight = wh - margin;
+                    bitmapMarginDp = dip2px(CameraActivity.this, bitmapMarginPx);
+                    int newWidth = wh - bitmapMarginDp;
+                    int newHeight = wh - bitmapMarginDp;
                     //matrix.postScale(scale, scale);
-                    final Bitmap newbitmap = Bitmap.createBitmap(bitmap, retX + margin / 2, retY + margin / 2, newWidth, newHeight, matrix, false);
+                    final Bitmap newbitmap = Bitmap.createBitmap(bitmap, retX + bitmapMarginDp / 2 - (width / 2 - scanWindowMarginTopDp - newWidth / 2), retY + bitmapMarginDp / 2, newWidth, newHeight, matrix, false);
                     //final Bitmap newbitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, false);
 
                     Log.e(TAG, Thread.currentThread().getName());
