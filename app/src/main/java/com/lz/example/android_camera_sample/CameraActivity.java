@@ -51,7 +51,7 @@ public class CameraActivity extends CheckPermissionsActivity {
     private static final String TAG = CameraActivity.class.getSimpleName();
 
     private int scanWindowMarginTopDp = 0;
-    private static final int scanWindowMarginTopPx = 0;
+    private static final int scanWindowMarginTopPx = 100;
     //bitmap 相对于预览窗口的上下间距之和
     private int bitmapMarginDp;
     private static final int bitmapMarginPx = 50;
@@ -67,8 +67,9 @@ public class CameraActivity extends CheckPermissionsActivity {
         surfaceView = (ImageView) findViewById(R.id.result_surface_view);
         RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams) surfaceView.getLayoutParams();
         scanWindowMarginTopDp = dip2px(this, scanWindowMarginTopPx);
-        layoutParams.setMargins(layoutParams.leftMargin, scanWindowMarginTopDp, layoutParams.rightMargin, 0);
-
+        layoutParams.setMargins(layoutParams.leftMargin, scanWindowMarginTopDp, layoutParams.rightMargin, layoutParams.bottomMargin);
+        layoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+        //layoutParams.addRule(RelativeLayout.CENTER_IN_PARENT);
         captureButton.setOnClickListener(
                 new View.OnClickListener() {
                     @Override
@@ -298,7 +299,8 @@ public class CameraActivity extends CheckPermissionsActivity {
                     //matrix.postScale(scale, scale);'
                     int bitmapCutOffset;
                     if (scanWindowMarginTopDp > 0) {
-                        bitmapCutOffset = width / 2 - scanWindowMarginTopDp - newWidth / 2;
+                        //bitmapCutOffset = width / 2 - scanWindowMarginTopDp - (newHeight + bitmapMarginDp / 2) / 2;
+                        bitmapCutOffset = width / 2 - scanWindowMarginTopDp - (newHeight) / 2;
                     } else {
                         bitmapCutOffset = 0;
                     }
