@@ -51,7 +51,7 @@ public class CameraActivity extends CheckPermissionsActivity {
     private static final String TAG = CameraActivity.class.getSimpleName();
 
     private int scanWindowMarginTopDp = 0;
-    private static final int scanWindowMarginTopPx = 100;
+    private static final int scanWindowMarginTopPx = 150;
     //bitmap 相对于预览窗口的上下间距之和
     private int bitmapMarginDp;
     private static final int bitmapMarginPx = 50;
@@ -215,7 +215,6 @@ public class CameraActivity extends CheckPermissionsActivity {
                 //Log.e(TAG + "bestPreviewSize", bestSize.width + ":" + bestSize.height);
                 //params.setPreviewSize(bestSize.width, bestSize.height);
                 Log.e(TAG + "oriPreviewSize", params.getPreviewSize().width + ":" + params.getPreviewSize().height);
-                Log.e(TAG + "oriPreviewSize picture", params.getPictureSize().width + ":" + params.getPictureSize().height);
                 Log.e(TAG + "oriPreviewSize screen", screenWidth + ":" + screenHeight);
                 //params.setPreviewSize(1920, 1080);
                 //params.setPreviewSize(params.getPreviewSize().width, params.getPreviewSize().height);
@@ -233,7 +232,7 @@ public class CameraActivity extends CheckPermissionsActivity {
                 //Log.e(TAG + "bestPictureSize", bestSize.width + ":" + bestSize.height);
                 //params.setPictureSize(bestSize.width, bestSize.height);
             }
-
+            Log.e(TAG + "oriPreviewSize picture", params.getPictureSize().width + ":" + params.getPictureSize().height);
             mCamera.setParameters(params);
             mPreview = new CameraPreview(this, mCamera);
             mPreview.setPreviewHandler(previewHandler);
